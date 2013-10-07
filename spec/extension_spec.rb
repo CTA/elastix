@@ -8,7 +8,7 @@ describe Extension do
       }
   }
 
-  before { Base.establish_connection $auth_options[:ip], $auth_options[:username], $auth_options[:password] }
+  before(:all) { Base.establish_connection $auth_options[:ip], $auth_options[:username], $auth_options[:password] }
   after(:all){ Base.close_connection }
   after(:each) do
     Extension.new(params).destroy if Extension.find(params["extension"])
@@ -97,7 +97,7 @@ describe Extension do
   describe ".update_attributes" do
     it "should only update the attributes that are input" do
       e = Extension.create(params)
-      e.update_attributes!("sipname" => "testing")
+      e.update_attributes("sipname" => "testing")
       new_ext = Extension.find(e.extension)
       e.to_hash.should eq new_ext.to_hash
     end

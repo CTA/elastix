@@ -1,5 +1,5 @@
 module Elastix
-  class Extension
+  class Extension < Base
     attr_accessor :extension, :name, :sipname, :outboundcid, :devinfo_secret
 
     def initialize(params)
@@ -7,7 +7,7 @@ module Elastix
     end
     
     def destroy
-      $elastix.get("#{$base_address}/config.php?type=setup&amp;display=extensions&amp;extdisplay=#{self.extension}&amp;action=del")
+      @@elastix.get("#{@@base_address}/config.php?type=setup&amp;display=extensions&amp;extdisplay=#{self.extension}&amp;action=del")
       Base.reload
     end
     
@@ -25,7 +25,7 @@ module Elastix
 
     def self.all
       #TODO abstract this method
-      page = $elastix.get("#{$base_address}/index.php?menu=pbxconfig")
+      page = @@elastix.get("#{@@base_address}/index.php?menu=pbxconfig")
       extensions = []
       page.links.each do |link|
         extensions << Extension.find(get_extension_from_link_text(link.text)) if href_is_acceptable? link.href
@@ -33,7 +33,7 @@ module Elastix
       extensions
     end
 
-    def update_attributes!(params)
+    def update_attributes(params)
       params[:extension] = self.extension
       Extension.update_extension_object(params)
       Base.reload
@@ -75,11 +75,11 @@ module Elastix
         form = page.form("frm_extensions")
         form.encoding = "utf-8"
         params.each{|key,value| form[key.to_s] = value unless value.nil?}
-        $elastix.submit(form, form.button_with("Submit"))
+        @@elastix.submit(form, form.button_with("Submit"))
       end
 
       def self.get_extension_display_page(extension)
-        $elastix.get "#{$base_address}/config.php?type=setup&display=extensions&extdisplay=#{extension}"
+        @@elastix.get "#{@@base_address}/config.php?type=setup&display=extensions&extdisplay=#{extension}"
       end
 
       def self.get_extension_attributes(form)
@@ -91,7 +91,7 @@ module Elastix
       end
 
       def self.exist? extension
-        if $elastix.get("#{$base_address}/index.php?menu=pbxconfig")
+        if @@elastix.get("#{@@base_address}/index.php?menu=pbxconfig")
           .body.match(/#{extension}/) then true else false end
       end
 

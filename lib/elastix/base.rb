@@ -28,10 +28,6 @@ module Elastix
       ActiveRecord::Base.connection.close
     end
 
-    def self.use_existing_db_connection connection
-      ActiveRecord::Base.establish_connection connection
-    end
-
     def self.close_db_connection
       @@base_address = nil
       @@elastix = nil

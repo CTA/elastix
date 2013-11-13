@@ -40,7 +40,7 @@ Here is a list of methods that have been implemented:
   * all
   * ==
   * to\_hash
-  * update\_attributes
+  * update\_attributes!
 
 ## Contributing
 

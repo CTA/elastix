@@ -19,4 +19,6 @@ Gem::Specification.new do |spec|
   spec.require_paths = ["lib"]
 
   spec.add_dependency 'mechanize', '~> 2.7' 
+  spec.add_dependency 'activerecord', '~> 3.2' 
+  spec.add_dependency 'mysql2'
 end

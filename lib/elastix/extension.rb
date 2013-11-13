@@ -2,7 +2,7 @@ module Elastix
   class Extension < Base
     attr_accessor :extension, :name, :sipname, :outboundcid, :devinfo_secret
 
-    def initialize(params)
+    def initialize params
       params.each_pair{|key,value| instance_variable_set "@#{key}", value}
     end
     
@@ -12,95 +12,82 @@ module Elastix
     end
     
     def save
-      raise "Extension already exists" if Extension.exist? self.extension
-      Extension.new_extension_object(self.to_hash)
+      if Extension.exist? extension
+        update_extension_object
+      else
+        new_extension_object
+      end
       Base.reload
     end
     
-    def self.create(params)
+    def update_attributes params
+      params.each_pair{|key,value| instance_variable_set "@#{key}", value}
+      self.update_extension_object
+      Base.reload
+    end
+
+    def == extension
+      self.to_hash == extension.to_hash
+    end
+    
+    def to_hash
+      Hash[self.instance_variables.map{|var| [var.to_s.delete("@"), self.instance_variable_get(var)]}]
+    end
+    
+
+    def self.find extension
+     get_extension_object(extension) if exist?(extension)
+    end
+
+    def self.create params
       e = Extension.new(params)
       e.save
       e
     end
 
     def self.all
-      #TODO abstract this method
-      page = @@elastix.get("#{@@base_address}/index.php?menu=pbxconfig")
-      extensions = []
-      page.links.each do |link|
-        extensions << Extension.find(get_extension_from_link_text(link.text)) if href_is_acceptable? link.href
-      end
-      extensions
+      Sip.uniq.pluck(:id)
     end
 
-    def update_attributes(params)
-      params[:extension] = self.extension
-      Extension.update_extension_object(params)
-      Base.reload
-    end
-
-    def self.find(extension)
-     get_extension_object(extension) if exist?(extension)
-    end
-
-    def ==(extension)
-      self.to_hash == extension.to_hash
-    end
-    
-    def to_hash
-      Hash[self.instance_variables.map{|var| [var.to_s.delete("@"), self.instance_variable_get(var)]}]
-      #my_hash.symbolize_keys
-    end
-    
     private
-      def self.get_extension_object(extension)
-        Extension.new(get_extension_attributes(get_extension_display_page(extension).forms.first))
-      end
-      
-      def self.update_extension_object(params)
-        page = get_extension_display_page(params[:extension])
-        update_and_submit_form(page, params)
+      def update_extension_object
+        page = Extension.get_extension_display_page(self.extension)
+        update_and_submit_form(page, self.to_hash)
       end
 
-      def self.new_extension_object(params)
-        page = get_extension_display_page(params[:extension])
+      def new_extension_object
         #This is necessary for new objects. It would be nice to figure out why.
+        page = @@elastix.get("#{@@base_address}/index.php?menu=pbxconfig")
         page.encoding = "utf-8"
         form = page.form("frm_extensions")
         page = form.submit(form.button_with("Submit"))
-        update_and_submit_form(page, params)
+        update_and_submit_form(page, self.to_hash)
       end
 
-      def self.update_and_submit_form(page, params)
+      def update_and_submit_form(page, params)
         form = page.form("frm_extensions")
         form.encoding = "utf-8"
         params.each{|key,value| form[key.to_s] = value unless value.nil?}
         @@elastix.submit(form, form.button_with("Submit"))
       end
 
+      def self.get_extension_object(extension)
+        Extension.new(get_extension_attributes(extension))
+      end
+
       def self.get_extension_display_page(extension)
         @@elastix.get "#{@@base_address}/config.php?type=setup&display=extensions&extdisplay=#{extension}"
       end
 
-      def self.get_extension_attributes(form)
-        Hash[form.fields.map{|field| [field.name, field.value] if is_a_class_attribute(field.name) and not field.value.empty?}]
-      end
-
-      def self.is_a_class_attribute attr
-        Extension.instance_methods.grep(/\w=$/).include? "#{attr}=".to_sym
+      #TODO make it easier to add fields. Right now it's just hardcoded what is returned.
+      def self.get_extension_attributes extension
+        secret = Sip.where(id: extension, keyword: "secret").first.data
+        user_fields = User.find_by_extension(extension)
+        {extension: extension, name: user_fields.name, sipname: user_fields.sipname, outboundcid: user_fields.outboundcid, devinfo_secret: secret}
       end
 
       def self.exist? extension
-        if @@elastix.get("#{@@base_address}/index.php?menu=pbxconfig")
-          .body.match(/#{extension}/) then true else false end
-      end
-
-      def self.href_is_acceptable?(href)
-        href.include? "config.php?type=setup&display=extensions&extdisplay=" unless href.nil?
-      end
-
-      def self.get_extension_from_link_text(link_text)
-        link_text.scan(/<(.*)>/).first.first
+        !!Sip.find_by_id(extension)
       end
   end
 end

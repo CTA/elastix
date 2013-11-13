@@ -29,7 +29,7 @@ module Elastix
     end
 
     def self.use_existing_db_connection connection
-      establish_connection connection
+      ActiveRecord::Base.establish_connection connection
     end
 
     def self.close_db_connection

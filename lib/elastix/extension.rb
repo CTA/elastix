@@ -22,7 +22,7 @@ module Elastix
     
     def update_attributes params
       params.each_pair{|key,value| instance_variable_set "@#{key}", value}
-      self.update_extension_object
+      update_extension_object
       Base.reload
     end
 

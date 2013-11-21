@@ -83,9 +83,16 @@ module Elastix
 
       #TODO make it easier to add fields. Right now it's just hardcoded what is returned.
       def self.get_extension_attributes extension
-        secret = Sip.where(id: extension, keyword: "secret").first.data
+        secret_record = Sip.where(id: extension, keyword: "secret").first
+        secret = secret_record ? secret_record.data : nil
         user_fields = User.find_by_extension(extension)
-        {extension: extension, name: user_fields.name, sipname: user_fields.sipname, outboundcid: user_fields.outboundcid, devinfo_secret: secret}
+        {
+          extension: extension, 
+          name: (user_fields.name if user_fields), 
+          sipname: (user_fields.sipname if user_fields), 
+          outboundcid: (user_fields.outboundcid if user_fields), 
+          devinfo_secret: secret
+        }
       end
 
       def self.exist? extension

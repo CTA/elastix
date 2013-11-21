@@ -33,6 +33,10 @@ module Elastix
       @@elastix = nil
     end
 
+    def self.web_connected?
+      @@elastix.current_page.title != "Elastix - Login page"
+    end
+
     def self.reload
       @@elastix.get("#{@@base_address}/config.php?handler=reload")
     end

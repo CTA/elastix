@@ -46,7 +46,9 @@ module Elastix
     end
 
     def self.all
-      Sip.uniq.pluck(:id)
+      Sip.uniq.pluck(:id).map do |extension|
+        get_extension_object(extension) if exist?(extension)
+      end
     end
 
     private
@@ -59,6 +61,7 @@ module Elastix
         #This is necessary for new objects. It would be nice to figure out why.
         page = @@elastix.get("#{@@base_address}/index.php?menu=pbxconfig")
         page.encoding = "utf-8"
+        p page
         form = page.form("frm_extensions")
         page = form.submit(form.button_with("Submit"))
         update_and_submit_form(page, self.to_hash)
